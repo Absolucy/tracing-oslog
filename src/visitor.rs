@@ -31,7 +31,7 @@ impl<'a> Visit for FieldVisitor<'a> {
 
 	fn record_str(&mut self, field: &Field, value: &str) {
 		self.output
-			.insert(field.name().to_string(), value.to_string());
+			.insert(field.name().to_string(), format!("\"{}\"", value));
 	}
 
 	fn record_debug(&mut self, field: &Field, value: &dyn Debug) {
