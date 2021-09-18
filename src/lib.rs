@@ -9,7 +9,7 @@ use crate::{
 		os_log_type_t_OS_LOG_TYPE_DEBUG, os_log_type_t_OS_LOG_TYPE_ERROR,
 		os_log_type_t_OS_LOG_TYPE_INFO, os_release, wrapped_os_log_with_type,
 	},
-	visitor::{AttrMap, FieldVisitor},
+	visitor::{AttributeMap, FieldVisitor},
 };
 use fnv::FnvHashMap;
 use once_cell::sync::Lazy;
@@ -20,7 +20,6 @@ use tracing_core::{
 	Event, Level, Subscriber,
 };
 use tracing_subscriber::{
-	field::RecordFields,
 	layer::{Context, Layer},
 	registry::LookupSpan,
 };
@@ -79,10 +78,6 @@ where
 		if extensions.get_mut::<Activity>().is_none() {
 			let mut names = NAMES.lock();
 			let metadata = span.metadata();
-			let full_name = [metadata.target(), metadata.name()].join("::");
-			let name = names.entry(full_name.clone()).or_insert_with(|| {
-				CString::new(full_name).expect("failed to construct C string from span name")
-			});
 			let parent_activity = match span.parent() {
 				Some(parent) => **parent
 					.extensions()
@@ -90,9 +85,24 @@ where
 					.expect("parent span didn't contain activity wtf"),
 				None => unsafe { &mut _os_activity_current as *mut _ },
 			};
-			let mut map = AttrMap::default();
-			let mut attr_visitor = FieldVisitor::new(&mut map);
+			let mut attributes = AttributeMap::default();
+			let mut attr_visitor = FieldVisitor::new(&mut attributes);
 			attrs.record(&mut attr_visitor);
+			let name = {
+				let function_name = [metadata.target(), metadata.name()].join("::");
+				let full_name = format!(
+					"{}({})",
+					function_name,
+					attributes
+						.into_iter()
+						.map(|(k, v)| format!("{}: {}", k, v))
+						.collect::<Vec<_>>()
+						.join(", ")
+				);
+				names.entry(full_name.clone()).or_insert_with(|| {
+					CString::new(full_name).expect("failed to construct C string from span name")
+				})
+			};
 			let activity = unsafe {
 				_os_activity_create(
 					&mut __dso_handle as *mut mach_header as *mut _,
@@ -102,7 +112,6 @@ where
 				)
 			};
 			extensions.insert(Activity(activity));
-			extensions.insert(map);
 		}
 	}
 
@@ -115,7 +124,23 @@ where
 			Level::WARN => os_log_type_t_OS_LOG_TYPE_ERROR,
 			Level::ERROR => os_log_type_t_OS_LOG_TYPE_ERROR,
 		};
-		let message = CString::new(format!("{:?}", event)).expect("aa");
+		let mut attributes = AttributeMap::default();
+		let mut attr_visitor = FieldVisitor::new(&mut attributes);
+		event.record(&mut attr_visitor);
+		let mut message = String::new();
+		if let Some(value) = attributes.remove(&"message".to_string()) {
+			message = value;
+			message.push_str("  ");
+		}
+		message.push_str(
+			&attributes
+				.into_iter()
+				.map(|(k, v)| format!("{}={}", k, v))
+				.collect::<Vec<_>>()
+				.join(" "),
+		);
+		let message =
+			CString::new(message).expect("failed to convert formatted message to a C string");
 		unsafe { wrapped_os_log_with_type(self.logger, level, message.as_ptr()) };
 	}
 

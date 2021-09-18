@@ -1,15 +1,14 @@
-use fnv::FnvHashMap;
-use std::fmt::Debug;
+use std::{collections::BTreeMap, fmt::Debug};
 use tracing_core::field::{Field, Visit};
 
-pub type AttrMap = FnvHashMap<String, String>;
+pub type AttributeMap = BTreeMap<String, String>;
 
 pub struct FieldVisitor<'a> {
-	output: &'a mut AttrMap,
+	output: &'a mut AttributeMap,
 }
 
 impl<'a> FieldVisitor<'a> {
-	pub fn new(output: &'a mut AttrMap) -> Self {
+	pub fn new(output: &'a mut AttributeMap) -> Self {
 		FieldVisitor { output }
 	}
 }
