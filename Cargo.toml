@@ -5,6 +5,9 @@ authors = ["Lucy <lucy@absolucy.moe>"]
 version = "0.1.0"
 edition = "2018"
 license = "Zlib"
+categories = ["development-tools::debugging", "development-tools::profiling", "os::macos-apis"]
+keywords = ["tracing", "oslog", "os_log", "macos", "ios"]
+repository = "https://github.com/Absolucy/tracing-oslog"
 
 [dependencies]
 cfg-if = "1.0.0"
