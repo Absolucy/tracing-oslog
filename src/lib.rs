@@ -1,3 +1,4 @@
+#![deny(clippy::complexity, clippy::correctness, clippy::perf, clippy::style)]
 cfg_if::cfg_if! {
 	if #[cfg(target_vendor = "apple")] {
 		mod ffi;
