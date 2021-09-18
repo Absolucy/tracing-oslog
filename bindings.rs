@@ -257,27 +257,9 @@ extern "C" {
 	);
 }
 extern "C" {
-	pub fn wrapped_get_default_log() -> os_log_t;
-}
-extern "C" {
 	pub fn wrapped_os_log_with_type(
 		log: os_log_t,
 		type_: os_log_type_t,
 		message: *const ::std::os::raw::c_char,
 	);
-}
-extern "C" {
-	pub fn wrapped_os_log_debug(log: os_log_t, message: *const ::std::os::raw::c_char);
-}
-extern "C" {
-	pub fn wrapped_os_log_info(log: os_log_t, message: *const ::std::os::raw::c_char);
-}
-extern "C" {
-	pub fn wrapped_os_log_default(log: os_log_t, message: *const ::std::os::raw::c_char);
-}
-extern "C" {
-	pub fn wrapped_os_log_error(log: os_log_t, message: *const ::std::os::raw::c_char);
-}
-extern "C" {
-	pub fn wrapped_os_log_fault(log: os_log_t, message: *const ::std::os::raw::c_char);
 }

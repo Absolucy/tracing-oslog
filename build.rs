@@ -1,6 +1,11 @@
 use std::{env, path::PathBuf};
 
 fn main() {
+	if env::var("CARGO_CFG_TARGET_VENDOR").expect("failed to get target vendor") != "apple" {
+		println!("cargo:warning=tracing-oslog is only available for Apple platforms, it will not log anything on other platforms!");
+		return;
+	}
+
 	let bindings = bindgen::Builder::default()
 		.header("wrapper.h")
 		.parse_callbacks(Box::new(bindgen::CargoCallbacks))

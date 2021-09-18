@@ -84,7 +84,8 @@ enum YakError {
 
 #[test]
 pub fn test() {
-	let collector = tracing_subscriber::registry().with(OsLogger::new("moe.absolucy.test"));
+	let collector =
+		tracing_subscriber::registry().with(OsLogger::new("moe.absolucy.test", "default"));
 	tracing::subscriber::set_global_default(collector).expect("a");
 	shave_all(10);
 }
