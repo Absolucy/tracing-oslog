@@ -6,6 +6,11 @@ fn main() {
 		return;
 	}
 
+	let mut args = Vec::<String>::new();
+	if env::var("CARGO_CFG_TARGET_OS").expect("failed to get target os") == "ios" {
+		args.push("-miphoneos-version-min=10.0".to_string());
+	}
+
 	let bindings = bindgen::Builder::default()
 		.header("wrapper.h")
 		.parse_callbacks(Box::new(bindgen::CargoCallbacks))
@@ -17,6 +22,7 @@ fn main() {
 		.allowlist_type("os_log_.*")
 		.allowlist_var("_?os_activity_.*")
 		.allowlist_var("__dso_handle")
+		.clang_args(&args)
 		.generate()
 		.expect("Unable to generate bindings");
 
