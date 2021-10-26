@@ -76,7 +76,7 @@ impl<S> Layer<S> for OsLogger
 where
 	S: Subscriber + for<'a> LookupSpan<'a>,
 {
-	fn new_span(&self, attrs: &Attributes, id: &Id, ctx: Context<S>) {
+	fn on_new_span(&self, attrs: &Attributes, id: &Id, ctx: Context<S>) {
 		let span = ctx.span(id).expect("invalid span, this shouldn't happen");
 		let mut extensions = span.extensions_mut();
 		if extensions.get_mut::<Activity>().is_none() {
