@@ -143,6 +143,7 @@ where
 				.collect::<Vec<_>>()
 				.join(" "),
 		);
+		message.retain(|c| c != '\0');
 		let message =
 			CString::new(message).expect("failed to convert formatted message to a C string");
 		unsafe { wrapped_os_log_with_type(self.logger, level, message.as_ptr()) };
