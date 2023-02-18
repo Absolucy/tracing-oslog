@@ -8,7 +8,12 @@ fn main() {
 
 	let mut args = Vec::<String>::new();
 	if env::var("CARGO_CFG_TARGET_OS").expect("failed to get target os") == "ios" {
-		args.push("-miphoneos-version-min=10.0".to_string());
+		let version = if "macabi" == env::var("CARGO_CFG_TARGET_ABI").unwrap_or_default() {
+			"14.0"
+		} else {
+			"10.0"
+		};
+		args.push(format!("-miphoneos-version-min={version}"));
 	}
 
 	let bindings = bindgen::Builder::default()
