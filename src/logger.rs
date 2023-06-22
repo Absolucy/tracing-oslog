@@ -1,8 +1,7 @@
 use crate::{
 	ffi::{
-		__dso_handle, _os_activity_create, _os_activity_current, mach_header,
-		os_activity_flag_t_OS_ACTIVITY_FLAG_DEFAULT, os_activity_scope_enter,
-		os_activity_scope_leave, os_activity_scope_state_s, os_activity_t, os_log_create, os_log_t,
+		__dso_handle, _os_activity_create, _os_activity_current, mach_header, os_activity_apply,
+		os_activity_flag_t_OS_ACTIVITY_FLAG_DEFAULT, os_activity_t, os_log_create, os_log_t,
 		os_log_type_t_OS_LOG_TYPE_DEBUG, os_log_type_t_OS_LOG_TYPE_ERROR,
 		os_log_type_t_OS_LOG_TYPE_INFO, os_release, wrapped_os_log_with_type,
 	},
@@ -44,7 +43,6 @@ impl Drop for Activity {
 
 pub struct OsLogger {
 	logger: os_log_t,
-	state: os_activity_scope_state_s,
 }
 
 impl OsLogger {
@@ -64,8 +62,7 @@ impl OsLogger {
 		let category = CString::new(category.as_ref())
 			.expect("failed to construct C string from category name");
 		let logger = unsafe { os_log_create(subsystem.as_ptr(), category.as_ptr()) };
-		let state = unsafe { std::mem::zeroed() };
-		Self { logger, state }
+		Self { logger }
 	}
 }
 
@@ -146,25 +143,31 @@ where
 		message.retain(|c| c != '\0');
 		let message =
 			CString::new(message).expect("failed to convert formatted message to a C string");
-		unsafe { wrapped_os_log_with_type(self.logger, level, message.as_ptr()) };
-	}
 
-	fn on_enter(&self, id: &Id, ctx: Context<S>) {
-		let span = ctx.span(id).expect("invalid span, this shouldn't happen");
-		let mut extensions = span.extensions_mut();
-		let activity = extensions
-			.get_mut::<Activity>()
-			.expect("span didn't contain activity wtf");
-		unsafe {
-			os_activity_scope_enter(**activity, &self.state as *const _ as *mut _);
+		if let Some(parent_id) = event.parent() {
+			let span = ctx
+				.span(parent_id)
+				.expect("invalid span, this shouldn't happen");
+			let mut extensions = span.extensions_mut();
+			let activity = extensions
+				.get_mut::<Activity>()
+				.expect("span didn't contain activity wtf");
+
+			unsafe {
+				os_activity_apply(
+					**activity,
+					(|| &mut { wrapped_os_log_with_type(self.logger, level, message.as_ptr()) }
+						as *mut _ as *mut std::os::raw::c_void)(),
+				)
+			}
+		} else {
+			unsafe { wrapped_os_log_with_type(self.logger, level, message.as_ptr()) };
 		}
 	}
 
-	fn on_exit(&self, _id: &Id, _ctx: Context<S>) {
-		unsafe {
-			os_activity_scope_leave(&self.state as *const _ as *mut _);
-		}
-	}
+	fn on_enter(&self, id: &Id, ctx: Context<S>) {}
+
+	fn on_exit(&self, _id: &Id, _ctx: Context<S>) {}
 
 	fn on_close(&self, id: Id, ctx: Context<S>) {
 		let span = ctx.span(&id).expect("invalid span, this shouldn't happen");
