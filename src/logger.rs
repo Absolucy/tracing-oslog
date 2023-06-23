@@ -2,9 +2,10 @@ use crate::{
 	ffi::{
 		__dso_handle, _os_activity_create, _os_activity_current, mach_header,
 		os_activity_flag_t_OS_ACTIVITY_FLAG_DEFAULT, os_activity_scope_enter,
-		os_activity_scope_leave, os_activity_scope_state_s, os_activity_t, os_log_create, os_log_t,
-		os_log_type_t_OS_LOG_TYPE_DEBUG, os_log_type_t_OS_LOG_TYPE_ERROR,
-		os_log_type_t_OS_LOG_TYPE_INFO, os_release, wrapped_os_log_with_type,
+		os_activity_scope_leave, os_activity_scope_state_s, os_activity_scope_state_t,
+		os_activity_t, os_log_create, os_log_t, os_log_type_t_OS_LOG_TYPE_DEBUG,
+		os_log_type_t_OS_LOG_TYPE_ERROR, os_log_type_t_OS_LOG_TYPE_INFO, os_release,
+		wrapped_os_log_with_type,
 	},
 	visitor::{AttributeMap, FieldVisitor},
 };
@@ -153,11 +154,13 @@ where
 				.get_mut::<Activity>()
 				.expect("span didn't contain activity wtf");
 
+			let raw_state = [0u64; 2usize];
 			unsafe {
-				let state: os_activity_scope_state_s = std::mem::zeroed();
-				os_activity_scope_enter(**activity, &state as *const _ as *mut _);
+				let state: os_activity_scope_state_s = std::mem::transmute(raw_state);
+				let state: os_activity_scope_state_t = &state as *const _ as *mut _;
+				os_activity_scope_enter(**activity, state);
 				wrapped_os_log_with_type(self.logger, level, message.as_ptr());
-				os_activity_scope_leave(&state as *const _ as *mut _);
+				os_activity_scope_leave(state);
 			}
 		} else {
 			unsafe { wrapped_os_log_with_type(self.logger, level, message.as_ptr()) };
