@@ -1,7 +1,8 @@
 use crate::{
 	ffi::{
-		__dso_handle, _os_activity_create, _os_activity_current, mach_header, os_activity_apply,
-		os_activity_flag_t_OS_ACTIVITY_FLAG_DEFAULT, os_activity_t, os_log_create, os_log_t,
+		__dso_handle, _os_activity_create, _os_activity_current, mach_header,
+		os_activity_flag_t_OS_ACTIVITY_FLAG_DEFAULT, os_activity_scope_enter,
+		os_activity_scope_leave, os_activity_scope_state_s, os_activity_t, os_log_create, os_log_t,
 		os_log_type_t_OS_LOG_TYPE_DEBUG, os_log_type_t_OS_LOG_TYPE_ERROR,
 		os_log_type_t_OS_LOG_TYPE_INFO, os_release, wrapped_os_log_with_type,
 	},
@@ -116,7 +117,7 @@ where
 		}
 	}
 
-	fn on_event(&self, event: &Event, _ctx: Context<S>) {
+	fn on_event(&self, event: &Event, ctx: Context<S>) {
 		let metadata = event.metadata();
 		let level = match *metadata.level() {
 			Level::TRACE => os_log_type_t_OS_LOG_TYPE_DEBUG,
@@ -143,8 +144,7 @@ where
 		message.retain(|c| c != '\0');
 		let message =
 			CString::new(message).expect("failed to convert formatted message to a C string");
-
-		if let Some(parent_id) = event.parent() {
+		if let Some(parent_id) = ctx.current_span().id() {
 			let span = ctx
 				.span(parent_id)
 				.expect("invalid span, this shouldn't happen");
@@ -154,18 +154,17 @@ where
 				.expect("span didn't contain activity wtf");
 
 			unsafe {
-				os_activity_apply(
-					**activity,
-					(|| &mut { wrapped_os_log_with_type(self.logger, level, message.as_ptr()) }
-						as *mut _ as *mut std::os::raw::c_void)(),
-				)
+				let state: os_activity_scope_state_s = std::mem::zeroed();
+				os_activity_scope_enter(**activity, &state as *const _ as *mut _);
+				wrapped_os_log_with_type(self.logger, level, message.as_ptr());
+				os_activity_scope_leave(&state as *const _ as *mut _);
 			}
 		} else {
 			unsafe { wrapped_os_log_with_type(self.logger, level, message.as_ptr()) };
 		}
 	}
 
-	fn on_enter(&self, id: &Id, ctx: Context<S>) {}
+	fn on_enter(&self, _id: &Id, _ctx: Context<S>) {}
 
 	fn on_exit(&self, _id: &Id, _ctx: Context<S>) {}
 
