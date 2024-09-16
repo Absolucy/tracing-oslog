@@ -9,10 +9,9 @@ use crate::{
 	},
 	visitor::{AttributeMap, FieldVisitor},
 };
-use fnv::FnvHashMap;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use std::{ffi::CString, ops::Deref, ptr::addr_of_mut};
+use std::{collections::HashMap, ffi::CString, ops::Deref, ptr::addr_of_mut};
 use tracing_core::{
 	span::{Attributes, Id},
 	Event, Level, Subscriber,
@@ -22,8 +21,8 @@ use tracing_subscriber::{
 	registry::LookupSpan,
 };
 
-static NAMES: Lazy<Mutex<FnvHashMap<String, CString>>> =
-	Lazy::new(|| Mutex::new(FnvHashMap::default()));
+static NAMES: Lazy<Mutex<HashMap<String, CString>>> =
+	Lazy::new(Mutex::default);
 
 struct Activity(os_activity_t);
 // lol
