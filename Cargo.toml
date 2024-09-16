@@ -21,5 +21,4 @@ bindgen = "0.70"
 cc = "1.0"
 
 [package.metadata.docs.rs]
-default-target = "x86_64-apple-darwin"
-targets = []
+targets = ["x86_64-apple-darwin"]
