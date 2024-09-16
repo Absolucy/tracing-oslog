@@ -18,7 +18,7 @@ fn main() {
 
 	let bindings = bindgen::Builder::default()
 		.header("wrapper.h")
-		.parse_callbacks(Box::new(bindgen::CargoCallbacks))
+		.parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
 		.allowlist_function("_?os_activity_.*")
 		.allowlist_function("os_log_.*")
 		.allowlist_function("os_release")

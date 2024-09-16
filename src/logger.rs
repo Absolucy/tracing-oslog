@@ -1,18 +1,18 @@
 use crate::{
 	ffi::{
-		__dso_handle, _os_activity_create, _os_activity_current, mach_header,
+		__dso_handle, _os_activity_create, _os_activity_current,
 		os_activity_flag_t_OS_ACTIVITY_FLAG_DEFAULT, os_activity_scope_enter,
 		os_activity_scope_leave, os_activity_scope_state_s, os_activity_scope_state_t,
 		os_activity_t, os_log_create, os_log_t, os_log_type_t_OS_LOG_TYPE_DEBUG,
 		os_log_type_t_OS_LOG_TYPE_ERROR, os_log_type_t_OS_LOG_TYPE_INFO, os_release,
-		wrapped_os_log_with_type,
+		wrapped_os_log_default, wrapped_os_log_with_type,
 	},
 	visitor::{AttributeMap, FieldVisitor},
 };
 use fnv::FnvHashMap;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use std::{ffi::CString, ops::Deref};
+use std::{ffi::CString, ops::Deref, ptr::addr_of_mut};
 use tracing_core::{
 	span::{Attributes, Id},
 	Event, Level, Subscriber,
@@ -45,6 +45,14 @@ impl Drop for Activity {
 
 pub struct OsLogger {
 	logger: os_log_t,
+}
+
+impl Default for OsLogger {
+	fn default() -> Self {
+		Self {
+			logger: unsafe { wrapped_os_log_default() },
+		}
+	}
 }
 
 impl OsLogger {
@@ -86,7 +94,7 @@ where
 					.extensions()
 					.get::<Activity>()
 					.expect("parent span didn't contain activity wtf"),
-				None => unsafe { &mut _os_activity_current as *mut _ },
+				None => unsafe { addr_of_mut!(_os_activity_current) },
 			};
 			let mut attributes = AttributeMap::default();
 			let mut attr_visitor = FieldVisitor::new(&mut attributes);
@@ -108,7 +116,7 @@ where
 			};
 			let activity = unsafe {
 				_os_activity_create(
-					&mut __dso_handle as *mut mach_header as *mut _,
+					addr_of_mut!(__dso_handle) as *mut _,
 					name.as_ptr(),
 					parent_activity,
 					os_activity_flag_t_OS_ACTIVITY_FLAG_DEFAULT,
