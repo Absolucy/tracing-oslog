@@ -21,8 +21,7 @@ use tracing_subscriber::{
 	registry::LookupSpan,
 };
 
-static NAMES: Lazy<Mutex<HashMap<String, CString>>> =
-	Lazy::new(Mutex::default);
+static NAMES: Lazy<Mutex<HashMap<String, CString>>> = Lazy::new(Mutex::default);
 
 struct Activity(os_activity_t);
 // lol
@@ -30,6 +29,7 @@ unsafe impl Send for Activity {}
 unsafe impl Sync for Activity {}
 impl Deref for Activity {
 	type Target = os_activity_t;
+
 	fn deref(&self) -> &Self::Target {
 		&self.0
 	}
@@ -55,12 +55,21 @@ impl Default for OsLogger {
 }
 
 impl OsLogger {
-	/// Initialize a new `OsLogger`, which will output [tracing] events to os_log on Apple platforms.
+	/// Initialize a new `OsLogger`, which will output [tracing] events to
+	/// os_log on Apple platforms.
 	///
 	/// # Arguments
 	///
-	/// * `subsystem` - An identifier string, in reverse DNS notation, that represents the subsystem that’s performing logging, for example, `com.your_company.your_subsystem_name`. The subsystem is used for categorization and filtering of related log messages, as well as for grouping related logging settings.
-	/// * `category` - A category within the specified subsystem. The system uses the category to categorize and filter related log messages, as well as to group related logging settings within the subsystem’s settings. A category’s logging settings override those of the parent subsystem.
+	/// * `subsystem` - An identifier string, in reverse DNS notation, that
+	///   represents the subsystem that’s performing logging, for example,
+	///   `com.your_company.your_subsystem_name`. The subsystem is used for
+	///   categorization and filtering of related log messages, as well as for
+	///   grouping related logging settings.
+	/// * `category` - A category within the specified subsystem. The system
+	///   uses the category to categorize and filter related log messages, as
+	///   well as to group related logging settings within the subsystem’s
+	///   settings. A category’s logging settings override those of the parent
+	///   subsystem.
 	pub fn new<S, C>(subsystem: S, category: C) -> Self
 	where
 		S: AsRef<str>,

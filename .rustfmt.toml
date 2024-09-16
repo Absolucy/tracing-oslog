@@ -1,4 +1,4 @@
-edition = "2018"
+edition = "2021"
 hard_tabs = true
 merge_derives = true
 newline_style = "Unix"
@@ -6,3 +6,13 @@ remove_nested_parens = true
 reorder_imports = true
 reorder_modules = true
 use_field_init_shorthand = true
+# Unstable formatting options below; remove if you REALLY don't wanna use `cargo +nightly fmt`
+unstable_features = true
+format_code_in_doc_comments = true
+format_macro_bodies = true
+format_strings = true
+imports_indent = "Block"
+imports_granularity = "Crate"
+overflow_delimited_expr = true
+reorder_impl_items = true
+wrap_comments = true

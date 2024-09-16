@@ -1,0 +1,4 @@
+*          text=auto eol=lf
+*.md       text	diff=markdown
+*.rs       text diff=rust
+*.toml     text diff=toml
