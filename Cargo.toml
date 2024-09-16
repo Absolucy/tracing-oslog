@@ -10,7 +10,7 @@ keywords = ["tracing", "oslog", "os_log", "macos", "ios"]
 repository = "https://github.com/Absolucy/tracing-oslog"
 
 [dependencies]
-tracing-subscriber = { version = "0.3", default_features = false, features = ["std", "registry"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "registry"] }
 cfg-if = "1.0"
 once_cell = "1.8"
 parking_lot = "0.12"
