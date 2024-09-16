@@ -10,13 +10,16 @@ fn main() {
 	}
 
 	let mut args = Vec::<String>::new();
-	if env::var("CARGO_CFG_TARGET_OS").expect("failed to get target os") == "ios" {
+	let target_os = env::var("CARGO_CFG_TARGET_OS").expect("failed to get target os");
+	if target_os == "ios" {
 		let version = if "macabi" == env::var("CARGO_CFG_TARGET_ABI").unwrap_or_default() {
 			"14.0"
 		} else {
 			"10.0"
 		};
 		args.push(format!("-miphoneos-version-min={version}"));
+	} else if target_os == "macos" {
+		args.push("-mmacosx-version-min=10.12".to_owned());
 	}
 
 	let bindings = bindgen::Builder::default()
