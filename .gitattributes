@@ -2,3 +2,5 @@
 *.md       text	diff=markdown
 *.rs       text diff=rust
 *.toml     text diff=toml
+
+src/bindings.rs linguist-generated

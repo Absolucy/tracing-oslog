@@ -5,10 +5,15 @@ authors = ["Lucy <lucy@absolucy.moe>"]
 version = "0.2.0"
 edition = "2021"
 license = "Zlib"
-categories = ["development-tools::debugging", "development-tools::profiling", "os::macos-apis"]
+categories = [
+    "development-tools::debugging",
+    "development-tools::profiling",
+    "os::macos-apis",
+]
 keywords = ["tracing", "oslog", "os_log", "macos", "ios"]
 repository = "https://github.com/Absolucy/tracing-oslog"
 documentation = "https://docs.rs/tracing-oslog"
+# Keep up to date with version in ./create_bindings.sh
 rust-version = "1.77"
 
 [dependencies]
@@ -19,7 +24,6 @@ parking_lot = "0.12"
 tracing-core = "0.1"
 
 [build-dependencies]
-bindgen = "0.70"
 cc = "1.0"
 
 [package.metadata.docs.rs]

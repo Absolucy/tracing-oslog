@@ -1,5 +1,5 @@
 use crate::{
-	ffi::{
+	bindings::{
 		__dso_handle, _os_activity_create, _os_activity_current,
 		os_activity_flag_t_OS_ACTIVITY_FLAG_DEFAULT, os_activity_scope_enter,
 		os_activity_scope_leave, os_activity_scope_state_s, os_activity_scope_state_t,
