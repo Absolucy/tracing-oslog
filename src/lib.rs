@@ -5,14 +5,17 @@
 	clippy::style,
 	clippy::suspicious
 )]
-cfg_if::cfg_if! {
-	if #[cfg(target_vendor = "apple")] {
-		mod ffi;
-		mod logger;
-		mod visitor;
-		pub use logger::*;
-	} else {
-		mod stub;
-		pub use stub::*;
-	}
-}
+
+#[cfg(target_vendor = "apple")]
+mod ffi;
+#[cfg(target_vendor = "apple")]
+mod logger;
+#[cfg(target_vendor = "apple")]
+mod visitor;
+#[cfg(target_vendor = "apple")]
+pub use logger::*;
+
+#[cfg(not(target_vendor = "apple"))]
+mod stub;
+#[cfg(not(target_vendor = "apple"))]
+pub use stub::*;
