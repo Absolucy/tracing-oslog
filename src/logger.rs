@@ -9,9 +9,13 @@ use crate::{
 	},
 	visitor::{AttributeMap, FieldVisitor},
 };
-use once_cell::sync::Lazy;
-use parking_lot::Mutex;
-use std::{collections::HashMap, ffi::CString, ops::Deref, ptr::addr_of_mut};
+use std::{
+	collections::HashMap,
+	ffi::CString,
+	ops::Deref,
+	ptr::addr_of_mut,
+	sync::{Mutex, OnceLock},
+};
 use tracing_core::{
 	span::{Attributes, Id},
 	Event, Level, Subscriber,
@@ -21,7 +25,7 @@ use tracing_subscriber::{
 	registry::LookupSpan,
 };
 
-static NAMES: Lazy<Mutex<HashMap<String, CString>>> = Lazy::new(Mutex::default);
+static NAMES: OnceLock<Mutex<HashMap<String, CString>>> = OnceLock::new();
 
 struct Activity(os_activity_t);
 // lol
@@ -95,13 +99,14 @@ where
 		let span = ctx.span(id).expect("invalid span, this shouldn't happen");
 		let mut extensions = span.extensions_mut();
 		if extensions.get_mut::<Activity>().is_none() {
-			let mut names = NAMES.lock();
+			let mut names = NAMES.get_or_init(Mutex::default).lock().unwrap();
 			let metadata = span.metadata();
 			let parent_activity = match span.parent() {
 				Some(parent) => **parent
 					.extensions()
 					.get::<Activity>()
 					.expect("parent span didn't contain activity wtf"),
+				#[allow(unused_unsafe)] // MSRV
 				None => unsafe { addr_of_mut!(_os_activity_current) },
 			};
 			let mut attributes = AttributeMap::default();
