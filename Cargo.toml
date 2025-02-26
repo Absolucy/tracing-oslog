@@ -27,4 +27,4 @@ tracing-core = "0.1"
 cc = "1.0"
 
 [package.metadata.docs.rs]
-targets = ["x86_64-apple-darwin"]
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "aarch64-apple-ios"]
