@@ -3,8 +3,9 @@ use crate::{
 		__dso_handle, _os_activity_create, _os_activity_current,
 		os_activity_flag_t_OS_ACTIVITY_FLAG_DEFAULT, os_activity_scope_enter,
 		os_activity_scope_leave, os_activity_scope_state_s, os_activity_scope_state_t,
-		os_activity_t, os_log_create, os_log_t, os_log_type_t_OS_LOG_TYPE_DEBUG,
-		os_log_type_t_OS_LOG_TYPE_ERROR, os_log_type_t_OS_LOG_TYPE_INFO, os_release,
+		os_activity_t, os_log_create, os_log_t, os_log_type_t, os_log_type_t_OS_LOG_TYPE_DEBUG,
+		os_log_type_t_OS_LOG_TYPE_DEFAULT, os_log_type_t_OS_LOG_TYPE_ERROR,
+		os_log_type_t_OS_LOG_TYPE_FAULT, os_log_type_t_OS_LOG_TYPE_INFO, os_release,
 		wrapped_os_log_default, wrapped_os_log_with_type,
 	},
 	visitor::{AttributeMap, FieldVisitor},
@@ -136,13 +137,7 @@ where
 
 	fn on_event(&self, event: &Event, ctx: Context<S>) {
 		let metadata = event.metadata();
-		let level = match *metadata.level() {
-			Level::TRACE => os_log_type_t_OS_LOG_TYPE_DEBUG,
-			Level::DEBUG => os_log_type_t_OS_LOG_TYPE_DEBUG,
-			Level::INFO => os_log_type_t_OS_LOG_TYPE_INFO,
-			Level::WARN => os_log_type_t_OS_LOG_TYPE_ERROR,
-			Level::ERROR => os_log_type_t_OS_LOG_TYPE_ERROR,
-		};
+		let level = tracing_level_to_oslog_level(*metadata.level());
 		let mut attributes = AttributeMap::default();
 		let mut attr_visitor = FieldVisitor::new(&mut attributes);
 		event.record(&mut attr_visitor);
@@ -201,5 +196,61 @@ impl Drop for OsLogger {
 		unsafe {
 			os_release(self.logger as *mut _);
 		}
+	}
+}
+
+/// Convert `tracing::Level` to an os_log-compatible level.
+///
+/// Note that the semantics of these log levels don't match up 1-to-1, because
+/// Apple's os_log is fairly old. See also
+/// <https://github.com/Absolucy/tracing-oslog/issues/14>.
+fn tracing_level_to_oslog_level(level: Level) -> os_log_type_t {
+	match level {
+		// Documented semantics:
+		// > Use this level to capture information that may be useful
+		// > during development or while troubleshooting a specific
+		// > problem.
+		//
+		// This matches pretty well with `Level::TRACE`, especially since
+		// `OS_LOG_TYPE_DEBUG` are only emitted through a configuration
+		// change (similarly to how `Level::TRACE` is often disabled at
+		// compile-time by default).
+		Level::TRACE => os_log_type_t_OS_LOG_TYPE_DEBUG,
+		// Documented semantics:
+		// > Use this level to capture information that may be helpful,
+		// > but not essential, for troubleshooting errors.
+		//
+		// I guess this could match semantically with either
+		// `Level::DEBUG` or `Level::INFO`.
+		Level::DEBUG => os_log_type_t_OS_LOG_TYPE_INFO,
+		// Documented semantics:
+		// > Use this level to capture information about things that might
+		// > result in a failure.
+		//
+		// This is arguably slightly incorrect compared to the semantics
+		// of `Level::INFO`, however we choose to do this since it's the
+		// level that `NSLog` operates on.
+		Level::INFO => os_log_type_t_OS_LOG_TYPE_DEFAULT,
+		// Documented semantics:
+		// > Use this log level to report process-level errors.
+		//
+		// However, we choose to veer from these, since in practice, users
+		// expect warnings to show up as orange in Console.app / Xcode (which
+		// this does).
+		//
+		// Note that this is also the leve that Swift's `Logger::warning`
+		// emits at:
+		// https://developer.apple.com/documentation/os/logger/warning(_:)
+		Level::WARN => os_log_type_t_OS_LOG_TYPE_ERROR,
+		// Documented semantics:
+		// > Use this level only to capture system-level or multi-process
+		// > information when reporting system errors.
+		//
+		// However, in practice many macOS applications use this logging level
+		// for "weaker" errors that this.
+		//
+		// This logging level also makes the log entry red in Console.app /
+		// Xcode, which is what a user would expect of a `Level::ERROR` entry.
+		Level::ERROR => os_log_type_t_OS_LOG_TYPE_FAULT,
 	}
 }
