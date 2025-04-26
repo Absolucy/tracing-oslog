@@ -1,0 +1,49 @@
+name: CI
+
+on: [push]
+
+permissions:
+  contents: read
+
+env:
+  BINDGEN_VERSION: 0.71.1
+
+jobs:
+  fmt:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: cargo fmt
+      run: cargo fmt -- --check
+
+  test:
+    name: Test
+    runs-on: macos-15 # Aarch64
+    steps:
+    - uses: actions/checkout@v4
+    - run: cargo generate-lockfile
+    - uses: Swatinem/rust-cache@v2
+    - run: cargo test
+
+  bindings:
+    name: Re-create bindings
+    runs-on: macos-15 # Aarch64
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Cache bindgen
+      uses: actions/cache@v4
+      id: bindgen-cache
+      with:
+        path: ~/.cargo/bin/bindgen
+        key: bindgen-${{ github.job }}-${{ matrix.name }}-0.71.1
+    - name: Install bindgen
+      if: ${{ steps.bindgen-cache.outputs.cache-hit != 'true' }}
+      # NOTE: Keep this version in sync with the cache key above
+      run: cargo install bindgen-cli --version=^0.71.1
+
+    - run: ./create_bindings.sh
+
+    - name: Verify that no files changed
+      run: git diff --exit-code
