@@ -102,7 +102,7 @@ where
 					.extensions()
 					.get::<Activity>()
 					.expect("parent span didn't contain activity wtf"),
-				None => unsafe { addr_of_mut!(_os_activity_current) },
+				None => addr_of_mut!(_os_activity_current),
 			};
 			let mut attributes = AttributeMap::default();
 			let mut attr_visitor = FieldVisitor::new(&mut attributes);
